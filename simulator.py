@@ -7,37 +7,48 @@ class Particle:
     '''
     Class to store the properties of the particle such as position, vel
     '''
-    def __init__(self, x, y, ang_vel):
+    def __init__(self, x, y, mass=None, rad=None):
         self.x = x
         self.y = y
+        self.mass = mass
+        self.rad = rad
         self.ang_vel = ang_vel
+
+class Boundary:
+    '''
+    Class to define the boundary conditions
+    '''
+    def __init__(self):
+        pass
+
+
+
 
 
 class ParticleSimulator:
     '''
     Class to handle the laws of motion of the particle
     '''
+    #Slots reduces the memory footprint of Particle class by avoiding storing variables of an instance in an internal
+    #dictionary. Drawback is it prevents addition of attributes no in __slots__
+    __slots__ = ('x','y','ang_vel')
 
     def __init__(self, particles):
         self.particles = particles
 
+
     def evolve(self, dt):
         timestep = 0.00001
-
         nsteps = int(dt / timestep)
-
+        # Loop order is changed
         for i in range(nsteps):
-            for p in self.particles:
-                # 1. calculate the direction
-                norm = (p.x ** 2 + p.y ** 2) ** 0.5
-                v_x = -p.y / norm
-                v_y = p.x / norm
-                # 2. calculate the displacement
-                d_x = timestep * p.ang_vel * v_x
-                d_y = timestep * p.ang_vel * v_y
-                p.x += d_x
-                p.y += d_y
-                # 3. repeat for all the time steps
+            r_i =np.array([[p.x,p.y] for p in self.particles])
+
+            ang_vel_i = np.array([[p.ang_vel] for p in self.particles])
+            norm_i = ((r_i**2).sum(axis=1))**0.5
+
+
+
 
 
 def visualize(simulator):
@@ -70,6 +81,9 @@ def visualize(simulator):
                                     blit=True,
                                     interval=10)
     plt.show()
+
+
+
 
 def test_visualize():
     particles = [Particle(0.3, 0.5, 1),
@@ -109,10 +123,23 @@ def benchmark():
     simulator = ParticleSimulator(particles)
     simulator.evolve(0.1)
 
+def benchmark_memory():
+    particles = [Particle(uniform(-1.0, 1.0),
+                              uniform(-1.0, 1.0),
+                              uniform(-1.0, 1.0))
+                      for i in range(100000)]
+    simulator = ParticleSimulator(particles)
+    simulator.evolve(0.001)
+
 if __name__ == '__main__':
-    '''Use ipython to profile.
-    from simulator import benchmark
-    %timeit benchmark
+    '''Use ipython to profile. From ipython command line:
+    %load_ext line_profiler
+    %load_ext memory_profiler
+    from simulator import benchmark, benchmark_memory
+    %timeit benchmark()
+    %prun benchmark()
+    %lprun -f ParticleSimulator.evolve benchmark()
+    %mprun -f benchmark_memory benchmark_memory()
     '''
     benchmark()
     test_evolve()
