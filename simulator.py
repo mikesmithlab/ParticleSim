@@ -6,17 +6,40 @@ import timeit
 class Particle:
     '''
     Class to store the properties of the particle such as position, vel
+
+    We also define how the particle interacts with other particles and the boundary.
     '''
     def __init__(self, x, y, mass=None, rad=None):
         self.x = x
         self.y = y
+        self.lifetime = 100
         self.mass = mass
         self.rad = rad
         self.ang_vel = ang_vel
 
+    def self_interaction(self):
+        pass
+
+    def boundary_interaction(self):
+        pass
+
+    def other_interaction(self):
+        pass
+
+    def move_particle(self):
+        pass
+
+    def kill_particle(self):
+        pass
+
 class Boundary:
     '''
     Class to define the boundary conditions
+
+    Here we define the nature of the boundary periodic or not
+    the shape of the boundary and its location. The interaction with
+    the boundary is set in the Particle class. If the boundary moves this
+    is also defined here.
     '''
     def __init__(self):
         pass
@@ -37,6 +60,7 @@ class ParticleSimulator:
         self.particles = particles
 
 
+
     def evolve(self, dt):
         timestep = 0.00001
         nsteps = int(dt / timestep)
@@ -46,6 +70,11 @@ class ParticleSimulator:
 
             ang_vel_i = np.array([[p.ang_vel] for p in self.particles])
             norm_i = ((r_i**2).sum(axis=1))**0.5
+
+
+    def store_particle_data(self):
+        pass
+
 
 
 
