@@ -1,36 +1,27 @@
 from matplotlib import pyplot as plt
 from matplotlib import animation
-from random import uniform
-import timeit
+import numpy as np
+
+
 
 class Particle:
+
     '''
     Class to store the properties of the particle such as position, vel
 
     We also define how the particle interacts with other particles and the boundary.
     '''
-    def __init__(self, x, y, mass=None, rad=None):
+    num_particles = 0
+
+    def __init__(self, x, y):
+        Particle.num_particles += 1
         self.x = x
         self.y = y
-        self.lifetime = 100
-        self.mass = mass
-        self.rad = rad
-        self.ang_vel = ang_vel
+        self.vx = 0
+        self.vy = 0
 
-    def self_interaction(self):
-        pass
 
-    def boundary_interaction(self):
-        pass
 
-    def other_interaction(self):
-        pass
-
-    def move_particle(self):
-        pass
-
-    def kill_particle(self):
-        pass
 
 class Boundary:
     '''
@@ -41,8 +32,22 @@ class Boundary:
     the boundary is set in the Particle class. If the boundary moves this
     is also defined here.
     '''
-    def __init__(self):
-        pass
+    def __init__(self, lim):
+        self.xlim = lim**2
+        self.ylim = lim**2
+
+
+    def boundary_handling(self,x_i,y_i,xlim=1.0,ylim=1.0):
+        x_i[x_i**2 > xlim**2] = -x_i[x_i**2 > xlim**2]
+        y_i[y_i ** 2 > ylim ** 2] = -y_i[y_i ** 2 > ylim ** 2]
+        return x_i, y_i
+
+
+
+
+
+
+
 
 
 
@@ -54,22 +59,32 @@ class ParticleSimulator:
     '''
     #Slots reduces the memory footprint of Particle class by avoiding storing variables of an instance in an internal
     #dictionary. Drawback is it prevents addition of attributes no in __slots__
-    __slots__ = ('x','y','ang_vel')
 
-    def __init__(self, particles):
+    def __init__(self, particles, boundary, T):
         self.particles = particles
+        self.boundary = boundary
+        self.T = T
 
 
 
-    def evolve(self, dt):
-        timestep = 0.00001
+    def evolve(self, dt, timestep = 0.00001):
+
         nsteps = int(dt / timestep)
         # Loop order is changed
         for i in range(nsteps):
-            r_i =np.array([[p.x,p.y] for p in self.particles])
+            x_i = np.array([p.x for p in self.particles])
+            y_i = np.array([p.y for p in self.particles])
 
-            ang_vel_i = np.array([[p.ang_vel] for p in self.particles])
-            norm_i = ((r_i**2).sum(axis=1))**0.5
+            #Move particles
+            x_i = x_i + np.random.normal(0, self.T, (Particle.num_particles, 1))
+            y_i = y_i + np.random.normal(0, self.T, (Particle.num_particles,1))
+            #Handle interactions with boundaries
+            x_i,y_i= self.boundary.boundary_handling(x_i,y_i)
+
+        for i,p in enumerate(self.particles):
+            p.x = x_i[i]
+            p.y = y_i[i]
+
 
 
     def store_particle_data(self):
@@ -115,10 +130,12 @@ def visualize(simulator):
 
 
 def test_visualize():
-    particles = [Particle(0.3, 0.5, 1),
-                 Particle(0.0, -0.5, -1),
-                 Particle(-0.1, -0.4, 3)]
-    simulator = ParticleSimulator(particles)
+    particles = [Particle(0.3, 0.5),
+                 Particle(0.0, -0.5),
+                 Particle(-0.1, -0.4)]
+    boundary = Boundary(3.0)
+    Temp = 0.1
+    simulator = ParticleSimulator(particles, boundary, Temp)
     visualize(simulator)
 
 def test_evolve():
@@ -130,7 +147,7 @@ def test_evolve():
     particles = [Particle( 0.3, 0.5, +1),
     Particle( 0.0, -0.5, -1),
     Particle(-0.1, -0.4, +3)]
-    simulator = ParticleSimulator(particles)
+    simulator = ParticleSimulator(particles, boundary, 0.1)
     simulator.evolve(0.1)
     p0, p1, p2 = particles
 
@@ -145,11 +162,11 @@ def test_evolve():
     assert fequal(p2.y, -0.365227)
 
 def benchmark():
-    particles = [Particle(uniform(-1.0,1.0),
-                          uniform(-1.0,1.0),
-                          uniform(-1.0,1.0))
+    particles = [Particle(np.random.uniform(-1.0,1.0),
+                          np.random.uniform(-1.0,1.0),
+                          np.random.uniform(-1.0,1.0))
                                  for i in range(1000)]
-    simulator = ParticleSimulator(particles)
+    simulator = ParticleSimulator(particles, boundary, 0.1)
     simulator.evolve(0.1)
 
 def benchmark_memory():
@@ -157,7 +174,7 @@ def benchmark_memory():
                               uniform(-1.0, 1.0),
                               uniform(-1.0, 1.0))
                       for i in range(100000)]
-    simulator = ParticleSimulator(particles)
+    simulator = ParticleSimulator(particles, boundary, 0.1)
     simulator.evolve(0.001)
 
 if __name__ == '__main__':
@@ -170,6 +187,8 @@ if __name__ == '__main__':
     %lprun -f ParticleSimulator.evolve benchmark()
     %mprun -f benchmark_memory benchmark_memory()
     '''
-    benchmark()
-    test_evolve()
+    #benchmark()
+    #test_evolve()
     test_visualize()
+
+    #boundary = Boundary()
