@@ -1,7 +1,8 @@
 from matplotlib import pyplot as plt
 from matplotlib import animation
 import numpy as np
-
+from Generic.filedialogs import load_filename
+from os.path import splitext, basename, dirname
 
 class Particle:
 
@@ -14,12 +15,12 @@ class Particle:
     time_step=0
     next_id = 0
 
-    def __init__(self, pos, vel, radius=1, mass=1, colour='red'):
+    def __init__(self, pos, vel, radius=1, mass=1, colour=(255,0,0)):
         self.pos = np.array(pos)
         self.vel = np.array(vel)
         self.radius = radius
         self.mass = mass
-        self.colour=(255,0,0)
+        self.colour=colour
         self.id = Particle.next_id
         Particle.next_id += 1
         Particle.num_particles += 1
@@ -47,16 +48,16 @@ class Scene:
     the boundary is set in the Particle class. If the boundary moves this
     is also defined here.
     '''
-    def __init__(self, lim, grid_size=1):
-        self.xlim = lim**2
-        self.ylim = lim**2
+    def __init__(self, filename = None):
+
+
+
+
+
         self.grid_dict = {}
 
-
-    def boundary_handling(self,x_i,y_i,xlim=1.0,ylim=1.0):
-        x_i[x_i**2 > xlim**2] = -x_i[x_i**2 > xlim**2]
-        y_i[y_i ** 2 > ylim ** 2] = -y_i[y_i ** 2 > ylim ** 2]
-        return x_i, y_i
+    def check_particle_boundary(self):
+        pass
 
 
     def assign_balls_grid(self, nballs):
@@ -80,12 +81,11 @@ class ParticleSimulator:
     '''
     Class to handle the laws of motion of the particle
     '''
-    def __init__(self, particles, boundary, time_step, filename_op):
-        self.particles = particles
-        self.boundary = boundary
+    def __init__(self,file_handle, particles, time_step):
+        self.f = file_handle
         self.time_step = time_step
-        self.filename_op = filename_op
-        Particle.time_step = time_step
+        self.particles=particles
+
 
 
     def evolve(self, dt):
@@ -100,9 +100,9 @@ class ParticleSimulator:
 
 
     def store_particle_data(self, particles, format = 'xyz'):
-        with open(self.filename_op, "a+") as f:
-            f.write(str(Particle.num_particles)+'\n\n')
-            [f.write(str(particle.id) + ' '
+
+            self.f.write(str(Particle.num_particles)+'\n\n')
+            [self.f.write(str(particle.id) + ' '
                      + str(particle.pos[0]) + ' ' + str(particle.pos[1]) + ' ' + str(particle.pos[2]) + ' '
                      + str(particle.vel[0]) + ' ' + str(particle.vel[1]) + ' ' + str(particle.vel[2]) + ' '
                      + str(particle.mass) + ' '
@@ -131,21 +131,29 @@ if __name__ == '__main__':
     '''
 
     #Define particles
-    n_particles = 30
+    n_particles = 300
     particles = [Particle([0 , 0, 0], [0,0,0]) for i in range(n_particles)]
     #Define simulation boundary
-    scene = Scene(3.0)
+    scene = Scene()
     #Data dump every dt
-    dt = 0.1
-    timestep = 0.001
+    dt = 1
+    time_step = 0.001
     t_sim = 10
-    filename_op = '/home/mike/Documents/test.xyz'
 
-    #Create simulation
-    simulator = ParticleSimulator(particles, scene, timestep, filename_op)
 
-    #for i in int(t_sim/dt):
-    simulator.store_particle_data(particles)
-    for i in range(int(t_sim/dt)):
-        simulator.evolve(dt)
+    filename_sim = load_filename(directory='/home/mike/Documents/particle_sim/init_sim/',
+                                      file_filter='*.sim_setup')
+    filename_scene = load_filename(directory='/home/mike/Documents/particle_sim/init_sim/', file_filter='*.scene')
+
+
+
+
+
+    filename_op = dirname(filename_sim) + '/../sim_output/' + splitext(basename(filename_sim))[0] + '.sim_result'
+    with open(filename_op, "a+") as f:
+        # Create simulation
+        simulator = ParticleSimulator(f,particles,time_step)
         simulator.store_particle_data(particles)
+        for i in range(int(t_sim/dt)):
+            simulator.evolve(dt)
+            simulator.store_particle_data(particles)
